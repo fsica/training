@@ -1,0 +1,66 @@
+<?php
+/**
+ * Implements hook_block_info().
+ */
+function module1_block_info() {
+  $blocks['module1_last_updated'] = array(
+    'info' => t('Last updated block'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function module1_block_view($delta = '') {
+  $block = array();
+
+  // Only act if it's our block
+  if ($delta == 'module1_last_updated') {
+    $block['subject'] = t('Last updated');
+
+    if ($last_update = _module1_last_updated()) {
+      $block['content'] = t('The site was last updated on @date.', array('@date' => $last_update));
+    }
+    else {
+      $block['content'] = t('There have been no updates.');
+    }
+  }
+
+  return $block;
+}
+/**
+ * Get the last updated date for nodes.
+ *
+ * @return
+ *   A formatted date for the last updated time if there are published nodes,
+ *   FALSE otherwise.
+ */
+function _module1_last_updated() {
+  // Pull from cache if available
+  if($cache = cache_get('module1_last_updated')) {
+    $last_updated = $cache->data;
+  }
+  else {
+    // Otherwise, find the timestamp for the latest node record
+    $last_updated = db_select('node', 'n')
+      ->fields('n', array('changed'))
+      ->condition('status', 0, '>') // only published nodes count
+      ->orderBy('changed', 'DESC')
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
+
+    // If nothing found, return FALSE.
+    if (!$last_updated) {
+      return FALSE;
+    }
+
+    // Otherwise, save the data to cache for one hour.
+    cache_set('module1_last_updated', $last_updated, 'cache', time() + 3600);
+  }
+
+  return format_date($last_updated);
+}
+
+?>

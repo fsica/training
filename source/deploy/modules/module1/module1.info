@@ -1,0 +1,4 @@
+name = Module 1
+description = Test Modulo 1.
+core = 7.x
+files[] = module1.module
