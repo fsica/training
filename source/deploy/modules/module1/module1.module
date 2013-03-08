@@ -10,6 +10,42 @@ function module1_block_info() {
 }
 
 /**
+ * Implements hook_block_configure().
+ */
+ 
+function module1_block_configure($delta){
+ 
+ $form = array();
+ 
+ switch ($delta) {
+  case 'module1_last_updated':
+            $form['lastupdate_type'] = array(
+                '#type' => 'checkbox',
+                '#title' => 'check for input a date',
+                '#default_value' => variable_get('module1_lastupdate_type', FALSE),
+            );
+            $form['lastupdate_date'] = array(
+                '#type' => 'date',
+                '#title' => 'Select a date',
+                '#default_value' => variable_get('module1_lastupdate_date', 0),
+                '#states' => array('visible' => array(
+                        ':input[name="lastupdate_type"]' => array('checked' => TRUE),)),
+            );
+            break;
+  }
+ 
+ return $form;
+}
+function module1_block_save($delta = '', $edit = array()) {
+  // This example comes from node.module.
+    switch ($delta) {
+        case 'module1_last_updated':            
+            variable_set('module1_lastupdate_type', $edit['lastupdate_type']);
+            variable_set('module1_lastupdate_date', $edit['lastupdate_date']);
+            break;        
+    }
+}
+/**
  * Implements hook_block_view().
  */
 function module1_block_view($delta = '') {
@@ -17,13 +53,21 @@ function module1_block_view($delta = '') {
 
   // Only act if it's our block
   if ($delta == 'module1_last_updated') {
+    // Get the previous fid of the file
     $block['subject'] = t('Last updated');
-
-    if ($last_update = _module1_last_updated()) {
-      $block['content'] = t('The site was last updated on @date.', array('@date' => $last_update));
+    if(variable_get('module1_lastupdate_type', 0) <> ""){
+      $date = variable_get('module1_lastupdate_date', 0);
+      $timestamp = strtotime($date['day']."-".$date['month']."-".$date['year']);
+      $block['content'] = "The site was last updated on ".format_date($timestamp);
     }
-    else {
-      $block['content'] = t('There have been no updates.');
+    else
+    {  
+      if ($last_update = _module1_last_updated()) {
+        $block['content'] = t('The site was last updated on @date.', array('@date' => $last_update));
+      }
+      else {
+        $block['content'] = t('There have been no updates.');
+      }
     }
   }
 
